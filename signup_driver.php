@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $host = "localhost";
 $user = "root";
-$password = "";
+$password = "newpassword";
 $dbname = "route_pro_db";
 $conn = new mysqli($host, $user, $password, $dbname);
 
