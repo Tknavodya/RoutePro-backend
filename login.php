@@ -2,6 +2,9 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+// 🔐 Start session
+session_start();
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Access-Control-Allow-Methods: POST");
@@ -45,6 +48,11 @@ if ($result && $result->num_rows === 1) {
     $user = $result->fetch_assoc();
     
     if (password_verify($password, $user['password'])) {
+        // ✅ Store in session
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_role'] = $user['role'];
+        $_SESSION['email'] = $email;
+
         echo json_encode([
             "success" => true,
             "message" => "Login successful",
