@@ -6,7 +6,7 @@ header("Content-Type: application/json");
 // Database connection settings
 $host = "localhost";
 $user = "root";
-$password = ""; // default XAMPP password
+$password = "newpassword"; // default XAMPP password
 $dbname = "route_pro_db";
 
 $conn = new mysqli($host, $user, $password, $dbname);
@@ -37,14 +37,14 @@ $phone = $conn->real_escape_string($data['phone']);
 $email = $conn->real_escape_string($data['email']);
 $password = password_hash($data['password'], PASSWORD_BCRYPT); // secure hash
 
-// Insert into `users` table
+// Insert into users table
 $stmtUser = $conn->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'traveller')");
 $stmtUser->bind_param("ss", $email, $password);
 
 if ($stmtUser->execute()) {
     $user_id = $stmtUser->insert_id;
 
-    // Insert into `travellers` table
+    // Insert into travellers table
     $stmtTraveller = $conn->prepare("INSERT INTO travellers (user_id, name, phone) VALUES (?, ?, ?)");
     $stmtTraveller->bind_param("iss", $user_id, $name, $phone);
 
