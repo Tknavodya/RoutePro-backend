@@ -1,6 +1,9 @@
 <?php
 // Login.php - Updated to work with your exact table structure
 session_start();
+// $_SESSION['name'] = 'Saman';
+// echo $_SESSION['username'];
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
