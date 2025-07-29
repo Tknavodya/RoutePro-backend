@@ -6,19 +6,23 @@ header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Content-Type: application/json");
 
+
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
+
 include_once '../models/DbConnector.php';
 include_once '../models/User.php';
+
 
 try {
     // Get JSON input
     $input = file_get_contents("php://input");
     $data = json_decode($input);
+
 
     // Validate input
     if (!isset($data->email) || !isset($data->password)) {
@@ -30,8 +34,10 @@ try {
         exit;
     }
 
+
     $email = trim($data->email);
     $password = $data->password;
+
 
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -43,25 +49,31 @@ try {
         exit;
     }
 
+
     // Database connection
     $db = new DbConnector();
     $con = $db->getConnection();
 
+
     if (!$con) {
         throw new Exception("Database connection failed");
     }
+
 
     // Create user object and attempt login
     $user = new User();
     $user->setEmail($email);
     $user->setPassword($password);
 
+
     $loggedInUser = $user->login($con);
+
 
     if ($loggedInUser) {
         // Set session variables
         $_SESSION["userId"] = $loggedInUser->getId();
         $_SESSION["role"] = $loggedInUser->getRole();
+
 
         // Return success response
         echo json_encode([
@@ -78,6 +90,7 @@ try {
             "error" => "Invalid email or password."
         ]);
     }
+
 
 } catch (Exception $e) {
     error_log("Login error: " . $e->getMessage());

@@ -1,219 +1,167 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
 
-// Handle preflight requests
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
-
-// Only allow POST requests
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(["success" => false, "error" => "Only POST method allowed"]);
-    exit;
-}
-
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "newpassword";
+// Database credentials
+$host = "localhost";
+$user = "root";
+$password = "newpassword"; // XAMPP default
 $dbname = "route_pro_db";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
+// Connect to DB
+$conn = new mysqli($host, $user, $password, $dbname);
 if ($conn->connect_error) {
-    error_log("Database connection failed: " . $conn->connect_error);
     echo json_encode(["success" => false, "error" => "Database connection failed"]);
     exit;
 }
 
-// Set charset
-$conn->set_charset("utf8mb4");
+// Read JSON body from request
+$data = json_decode(file_get_contents("php://input"), true);
 
-// Get JSON input
-$input = file_get_contents("php://input");
-$data = json_decode($input, true);
 
-if (!$data) {
-    echo json_encode(["success" => false, "error" => "Invalid JSON input"]);
+
+
+// Validate input
+if (
+    empty($data['fullName']) ||
+    empty($data['phone']) ||
+    empty($data['email']) ||
+    empty($data['guidelicense']) ||
+    empty($data['experience']) ||
+    empty($data['location']) ||
+    empty($data['language']) ||
+    empty($data['password'])||
+    empty($data['confirmPassword'])
+) {
+    echo json_encode(["success" => false, "error" => "Missing required fields"]);
     exit;
 }
 
-// Validate required fields
-$required = ['name', 'email', 'phone', 'license_no', 'vehicle_type', 'experience', 'location', 'password'];
-foreach ($required as $field) {
-    if (!isset($data[$field]) || trim($data[$field]) === '') {
-        echo json_encode(["success" => false, "error" => "Missing required field: $field"]);
-        exit;
-    }
-}
+// Sanitize input
 
-// Server-side validation functions
-function validateName($name) {
-    return preg_match('/^[a-zA-Z\s]+$/', trim($name)) && strlen(trim($name)) >= 2;
-}
-
-function validateEmail($email) {
-    return filter_var($email, FILTER_VALIDATE_EMAIL);
-}
-
-function validatePhone($phone) {
-    $cleaned = preg_replace('/[\s-]/', '', $phone);
-    return preg_match('/^0\d{9}$/', $cleaned) || preg_match('/^7\d{8}$/', $cleaned);
-}
-
-function validateLicense($license) {
-    return preg_match('/^[a-zA-Z0-9]+$/', $license) && strlen($license) >= 5;
-}
-
-function validatePassword($password) {
-    // At least 8 chars, one letter, one number, one special char
-    return preg_match('/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}/', $password);
-}
-
-function validateVehicleType($type) {
-    $allowed = ['car', 'minicar', 'van', 'bike', 'tuk'];
-    return in_array($type, $allowed);
-}
-
-// Validate all inputs
-if (!validateName($data['name'])) {
-    echo json_encode(["success" => false, "error" => "Name must be at least 2 characters and contain only letters and spaces"]);
-    exit;
-}
-
-if (!validateEmail($data['email'])) {
-    echo json_encode(["success" => false, "error" => "Invalid email format"]);
-    exit;
-}
-
-if (!validatePhone($data['phone'])) {
-    echo json_encode(["success" => false, "error" => "Phone number must be 10 digits starting with 0 or 9 digits starting with 7"]);
-    exit;
-}
-
-if (!validateLicense($data['license_no'])) {
-    echo json_encode(["success" => false, "error" => "License number must be at least 5 characters and contain only letters and numbers"]);
-    exit;
-}
-
-if (!validateVehicleType($data['vehicle_type'])) {
-    echo json_encode(["success" => false, "error" => "Invalid vehicle type selected"]);
-    exit;
-}
-
-if (!is_numeric($data['experience']) || $data['experience'] < 0) {
-    echo json_encode(["success" => false, "error" => "Experience must be a non-negative number"]);
-    exit;
-}
-
-if (!validatePassword($data['password'])) {
-    echo json_encode(["success" => false, "error" => "Password must be at least 8 characters and include letters, numbers, and a special character"]);
-    exit;
-}
-
-// Sanitize inputs
-$name = $conn->real_escape_string(trim($data['name']));
-$email = $conn->real_escape_string(trim($data['email']));
-$phone = $conn->real_escape_string(preg_replace('/[\s-]/', '', $data['phone']));
-$license_no = $conn->real_escape_string(trim($data['license_no']));
-$vehicle_type = $conn->real_escape_string($data['vehicle_type']);
-$experience = (int)$data['experience'];
-$location = $conn->real_escape_string(trim($data['location']));
+$name = $conn->real_escape_string($data['name']);
+$phone = $conn->real_escape_string($data['phone']);
+$email = $conn->real_escape_string($data['email']);
+$nic = $conn->real_escape_string($data['nic']);
+$license_no = $conn->real_escape_string($data['license_no']);
+$experience = intval($data['experience']);
+$location = $conn->real_escape_string($data['location']);
+$languages = $conn->real_escape_string($data['languages']);
 $password = password_hash($data['password'], PASSWORD_BCRYPT);
 
-// Start transaction
-$conn->autocommit(FALSE);
 
-try {
-    // Check if email already exists
-    $checkEmail = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    if (!$checkEmail) {
-        throw new Exception("Prepare failed: " . $conn->error);
-    }
-    
-    $checkEmail->bind_param("s", $email);
-    $checkEmail->execute();
-    $result = $checkEmail->get_result();
-    
-    if ($result->num_rows > 0) {
-        echo json_encode(["success" => false, "error" => "Email already registered"]);
-        $checkEmail->close();
-        $conn->rollback();
-        $conn->close();
-        exit;
-    }
-    $checkEmail->close();
-
-    // Check if license number already exists
-    $checkLicense = $conn->prepare("SELECT id FROM drivers WHERE license_no = ?");
-    if (!$checkLicense) {
-        throw new Exception("Prepare failed: " . $conn->error);
-    }
-    
-    $checkLicense->bind_param("s", $license_no);
-    $checkLicense->execute();
-    $result = $checkLicense->get_result();
-    
-    if ($result->num_rows > 0) {
-        echo json_encode(["success" => false, "error" => "License number already registered"]);
-        $checkLicense->close();
-        $conn->rollback();
-        $conn->close();
-        exit;
-    }
-    $checkLicense->close();
-
-    // Insert into users table
-    $stmtUser = $conn->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'driver')");
-    if (!$stmtUser) {
-        throw new Exception("Prepare failed: " . $conn->error);
-    }
-    
-    $stmtUser->bind_param("ss", $email, $password);
-    
-    if (!$stmtUser->execute()) {
-        throw new Exception("Failed to insert user: " . $stmtUser->error);
-    }
-    
+// Insert into users table
+$stmtUser = $conn->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'guide')");
+$stmtUser->bind_param("ss", $email, $password);
+if ($stmtUser->execute()) {
     $user_id = $stmtUser->insert_id;
-    $stmtUser->close();
 
-    // Insert into drivers table
-    $stmtDriver = $conn->prepare("INSERT INTO drivers (user_id, name, phone, license_no, vehicle_type, experience, location, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'available')");
-    if (!$stmtDriver) {
-        throw new Exception("Prepare failed: " . $conn->error);
+
+ // Insert into travellers table
+    $stmtGuider = $conn->prepare("INSERT INTO guides (user_id, name, phone,nic,license_no,experience,location,language) VALUES (?, ?, ?,?,?,?,?)");
+    $stmtGuider->bind_param("iss", $user_id, $name, $phone);
+
+    if ($stmtGuider->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to insert into Guiders table"]);
     }
-    
-    $stmtDriver->bind_param("issssis", $user_id, $name, $phone, $license_no, $vehicle_type, $experience, $location);
-    
-    if (!$stmtDriver->execute()) {
-        throw new Exception("Failed to insert driver: " . $stmtDriver->error);
-    }
-    
-    $driver_id = $stmtDriver->insert_id;
-    $stmtDriver->close();
 
-    // Commit transaction
-    $conn->commit();
-    
-    echo json_encode([
-        "success" => true, 
-        "message" => "Driver registered successfully",
-        "driver_id" => $driver_id,
-        "user_id" => $user_id
-    ]);
-
-} catch (Exception $e) {
-    // Rollback transaction on error
-    $conn->rollback();
-    error_log("Driver registration error: " . $e->getMessage());
-    echo json_encode(["success" => false, "error" => "Registration failed: " . $e->getMessage()]);
-} finally {
-    $conn->autocommit(TRUE);
-    $conn->close();
+    $stmtGuider->close();
+} else {
+    echo json_encode(["success" => false, "error" => "User already exists or error in user insertion"]);
 }
+
+$stmtUser->close();
+$conn->close();
+?>
+
+
+
+
+
+
+
+
+
+const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  };
+
+
+const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!form.agree) {
+      alert('Please agree to the terms and conditions');
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      alert('Passwords do not match!');
+      return;
+    }
+
+const payload = {
+      name: form.fullName,
+      email: form.email,
+      phone: form.phone,
+      nic: form.nic,
+      license_no: form.guideLicense,
+      experience: form.experience,
+      location: form.location,
+      languages: form.languages,
+      password: form.password,
+    };
+
+
+
+
+
+// Validate required fields
+$required = ['name', 'email', 'phone', 'password', 'nic', 'license_no', 'experience', 'location', 'languages'];
+foreach ($required as $field) {
+    if (empty($data[$field])) {
+        echo json_encode(["success" => false, "error" => "Missing field: $field"]);
+        exit;
+    }
+}
+
+// Sanitize & prepare data
+$name = $conn->real_escape_string($data['name']);
+$phone = $conn->real_escape_string($data['phone']);
+$email = $conn->real_escape_string($data['email']);
+$nic = $conn->real_escape_string($data['nic']);
+$license_no = $conn->real_escape_string($data['license_no']);
+$experience = intval($data['experience']);
+$location = $conn->real_escape_string($data['location']);
+$languages = $conn->real_escape_string($data['languages']);
+$passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
+
+// Step 1: Insert into users table
+$stmtUser = $conn->prepare("INSERT INTO users (email, password, role) VALUES (?, ?, 'guider')");
+$stmtUser->bind_param("ss", $email, $passwordHash);
+
+if ($stmtUser->execute()) {
+    $user_id = $stmtUser->insert_id;
+
+    // Step 2: Insert into guiders table
+    $stmtGuider = $conn->prepare("INSERT INTO guiders (user_id, name, phone, status, nic, license_no, experience, location, languages) VALUES (?, ?, ?, 'nonavailable', ?, ?, ?, ?, ?)");
+    $stmtGuider->bind_param("isssssis", $user_id, $name, $phone, $nic, $license_no, $experience, $location, $languages);
+
+    if ($stmtGuider->execute()) {
+        echo json_encode(["success" => true]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Failed to insert into guiders table"]);
+    }
+
+    $stmtGuider->close();
+} else {
+    echo json_encode(["success" => false, "error" => "User already exists or error inserting user"]);
+}
+
+$stmtUser->close();
+$conn->close();
 ?>

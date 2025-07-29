@@ -11,6 +11,7 @@ class User {
     private $reset_token;
     private $reset_token_expiry;
 
+
     // Constructor
     public function __construct(
         $name = null,
@@ -26,6 +27,7 @@ class User {
         $this->rating = $rating;
     }
 
+
     // Getters
     public function getId() { return $this->id; }
     public function getName() { return $this->name; }
@@ -36,6 +38,7 @@ class User {
     public function getCreatedAt() { return $this->created_at; }
     public function getResetToken() { return $this->reset_token; }
     public function getResetTokenExpiry() { return $this->reset_token_expiry; }
+
 
     // Setters
     public function setId($id) { $this->id = $id; }
@@ -48,17 +51,19 @@ class User {
     public function setResetToken($reset_token) { $this->reset_token = $reset_token; }
     public function setResetTokenExpiry($reset_token_expiry) { $this->reset_token_expiry = $reset_token_expiry; }
 
+
     public function login($connection) {
         try {
-            $sql = "SELECT id, name, email, password, role, rating, created_at 
-                    FROM users 
+            $sql = "SELECT id, name, email, password, role, rating, created_at
+                    FROM users
                     WHERE email = ?";
-            
+           
             $stmt = $connection->prepare($sql);
             $stmt->bindValue(1, $this->email);
             $stmt->execute();
-            
+           
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
 
             if ($row && password_verify($this->password, $row['password'])) {
                 // Create user object with fetched data
@@ -69,9 +74,10 @@ class User {
                 $user->setRole($row['role']);
                 $user->setRating($row['rating']);
                 $user->setCreatedAt($row['created_at']);
-                
+               
                 return $user;
             }
+
 
             return null;
         } catch (PDOException $e) {

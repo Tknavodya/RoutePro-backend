@@ -23,15 +23,23 @@ if ($conn->connect_error) {
     exit;
 }
 
-// Fetch full driver info where user_id = ?
-$sql = "SELECT name, vehicle_type, location, experience, contact FROM drivers WHERE user_id = ?";
+// Fetch multiple fields from drivers table
+$sql = "SELECT name, phone, status, license_no, vehicle_type, experience, location FROM drivers WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
-    echo json_encode($row); // return entire row directly
+    echo json_encode([
+        "name" => $row['name'],
+        "phone" => $row['phone'],
+        "status" => $row['status'],
+        "license_no" => $row['license_no'],
+        "vehicle_type" => $row['vehicle_type'],
+        "experience" => $row['experience'],
+        "location" => $row['location']
+    ]);
 } else {
     echo json_encode(["error" => "Driver not found"]);
 }
