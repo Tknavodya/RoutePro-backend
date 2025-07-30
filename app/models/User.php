@@ -1,5 +1,5 @@
 <?php
-// User.php - Updated to match your exact database structure
+
 class User {
     private $id;
     private $name;
