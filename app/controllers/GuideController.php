@@ -13,14 +13,15 @@ if (!$data) {
     exit;
 }
 
-$name = $data['name'] ?? '';
-$email = $data['email'] ?? '';
-$phone = $data['phone'] ?? '';
+$name       = $data['name'] ?? '';
+$email      = $data['email'] ?? '';
+$phone      = $data['phone'] ?? '';
 $license_no = $data['license_no'] ?? '';
 $experience = $data['experience'] ?? 0;
-$location = $data['location'] ?? '';
-$nic=$data['nic']??'';
-$password = $data['password'] ?? '';
+$location   = $data['location'] ?? '';
+$nic        = $data['nic'] ?? '';
+$languages  = $data['languages'] ?? '';
+$password   = $data['password'] ?? '';
 
 try {
     $db = new DbConnector();
@@ -43,9 +44,9 @@ try {
     $stmt->execute([$name, $email, $hashedPassword, $role, $rating]);
     $user_id = $conn->lastInsertId();
 
-    // Insert into drivers table
-    $stmt = $conn->prepare("INSERT INTO guides (user_id, name, phone, license_no, nic, experience, location,languages) VALUES (?, ?, ?, ?, ?, ?,?,?)");
-                               $stmt->execute([$user_id, $name, $phone, $license_no,$nic, $experience, $location,$language]);
+    // Insert into guides table
+    $stmt = $conn->prepare("INSERT INTO guides (user_id, name, phone, nic, license_no, experience, location, languages) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$user_id, $name, $phone, $nic, $license_no, $experience, $location, $languages]);
 
     echo json_encode(["success" => true]);
 } catch (Exception $e) {
