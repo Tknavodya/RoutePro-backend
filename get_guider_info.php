@@ -5,8 +5,8 @@ header("Content-Type: application/json");
 // Database connection
 $host = "localhost";
 $db = "route_pro_db";
-$user = "root";      // Change if needed
-$pass = "newpassword"; // Change if you have a DB password
+$user = "root";
+$pass = "newpassword";
 
 // Get user ID from GET request
 $userId = isset($_GET['userId']) ? intval($_GET['userId']) : 0;
@@ -23,17 +23,25 @@ if ($conn->connect_error) {
     exit;
 }
 
-// Fetch user name from drivers table where user_id = ?
-$sql = "SELECT name FROM drivers WHERE user_id = ?";
+// Fetch multiple fields from drivers table
+$sql = "SELECT name, phone, status, license_no,nic, experience,languages, location FROM guides WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
-    echo json_encode(["message" => $row['name']]);
+    echo json_encode([
+        "name" => $row['name'],
+        "phone" => $row['phone'],
+        "status" => $row['status'],
+        "license_no" => $row['license_no'],
+        "languages" => $row['languages'],
+        "experience" => $row['experience'],
+        "location" => $row['location']
+    ]);
 } else {
-    echo json_encode(["error" => "Driver not found"]);
+    echo json_encode(["error" => "Guide not found"]);
 }
 
 $stmt->close();

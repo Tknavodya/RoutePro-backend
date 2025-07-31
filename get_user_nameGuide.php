@@ -23,8 +23,8 @@ if ($conn->connect_error) {
     exit;
 }
 
-// Fetch user name from drivers table where user_id = ?
-$sql = "SELECT name FROM drivers WHERE user_id = ?";
+// Fetch user name from guides table where user_id = ?
+$sql = "SELECT name FROM guides WHERE user_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userId);
 $stmt->execute();

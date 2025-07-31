@@ -60,21 +60,21 @@ class Guide {
     // Save guide to database
     public function save($connection) {
         try {
-            $sql = "INSERT INTO guides (user_id, name, phone, nic, license_no, experience, location, languages)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+           $sql = "INSERT INTO guides (user_id, name, phone, nic, license_no, experience, location, languages)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
             $stmt = $connection->prepare($sql);
-            return $stmt->execute([
-                $this->user_id,
-                $this->name,
-                $this->phone,
-                $this->nic,
-                $this->license_no,
-                $this->experience,
-                $this->location,
-                $this->languages,
-        
-            ]);
+           return $stmt->execute([
+    $this->user_id,
+    $this->name,
+    $this->phone,
+    $this->nic,
+    $this->license_no,
+    $this->experience,
+    $this->location,
+    $this->languages
+]);
+
         } catch (PDOException $e) {
             error_log("Guide Save Error: " . $e->getMessage());
             return false;
