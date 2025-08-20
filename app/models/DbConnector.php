@@ -2,9 +2,9 @@
 // DbConnector.php
 class DbConnector {
     private $hostname = "localhost";
-    private $dbname = "route_pro_db";
+    private $dbname = "route_pro_db (3)";
     private $dbuser = "root";
-    private $dbpw = "newpassword";
+    private $dbpw = "";
     private $connection = null;
 
     public function getConnection() {
